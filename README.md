@@ -1,6 +1,10 @@
 # 2DoEverything
 
+![2DoEverything 封面，银白背景上的黄色四瓣笑脸角色](docs/images/cover.webp)
+
 一个 Windows 桌面待办工具。随手记下想做的事，按日期查看，做完一件就划掉一件。
+
+[**下载 Windows 便携版**](https://github.com/kkk168kk/2DoEverything/releases/tag/v0.2.2)
 
 ## 下载与使用
 
@@ -8,12 +12,19 @@
 2. 在 Windows 10 或 11（x64）上完整解压 ZIP。
 3. 双击解压目录里的 `2DoEverything.exe`。
 
-## 功能
+## 界面预览
 
-- 按日期查看待办，为任务添加优先级和备注。
-- 用文字或语音添加任务，也可以用 `Ctrl + Shift + X` 快速录入。
-- 导出按日期整理的 Markdown 待办记录，方便回顾，也可以将文件发给 AI 总结。
-- 在浅色与深色主题间切换，在设置里选择是否开机启动。
+### 今日待办
+
+按日期查看任务，给待办加上优先级和备注，完成后勾选。支持文字和语音录入，也可以用 `Ctrl + Shift + X` 快速添加。
+
+![浅色主题下的今日待办列表，展示优先级、备注和已完成状态](docs/images/today-light.png)
+
+### Markdown 导出
+
+可以导出最近 5 个有记录的日期，也可以指定日期范围。导出的 Markdown 文件可以留作回顾，也可以发给 AI 总结。
+
+![Markdown 导出弹窗，提供最近 5 个有记录的日期和指定日期范围](docs/images/export-markdown.png)
 
 ## 应用代码
 
