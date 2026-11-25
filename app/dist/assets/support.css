@@ -1,0 +1,187 @@
+:root {
+  --support-offset: 14px;
+  --support-button-size: 40px;
+  --support-dialog-offset: calc(var(--support-offset) + var(--support-button-size) + 10px);
+  --support-red: #cb304d;
+  --support-tint: #fbe9ed;
+}
+
+[data-theme="dark"] {
+  --support-red: #ff687e;
+  --support-tint: #442a34;
+}
+
+.todo-dice-scroll {
+  padding-bottom: var(--support-dialog-offset);
+}
+
+.todo-support-trigger {
+  position: fixed;
+  z-index: 10;
+  right: var(--support-offset);
+  bottom: var(--support-offset);
+  display: grid;
+  place-items: center;
+  width: var(--support-button-size);
+  height: var(--support-button-size);
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  color: var(--support-red);
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease;
+  -webkit-app-region: no-drag;
+}
+
+.todo-support-trigger:hover,
+.todo-support-trigger[data-state="open"] {
+  border-color: var(--support-red);
+  background: var(--support-tint);
+}
+
+.todo-support-trigger:active .todo-support-heart {
+  scale: .9;
+}
+
+.todo-support-trigger:focus-visible {
+  border-radius: 50%;
+}
+
+.todo-support-trigger .todo-support-heart {
+  animation: support-heart-wiggle 1.68s ease-in-out 1.68s infinite;
+}
+
+.todo-support-trigger:is(:hover, :focus-visible, [data-state="open"]) .todo-support-heart {
+  animation: none;
+}
+
+@keyframes support-heart-wiggle {
+  0%, 25%, 100% { transform: rotate(0); }
+  5% { transform: rotate(-13deg); }
+  10% { transform: rotate(11deg); }
+  15% { transform: rotate(-7deg); }
+  20% { transform: rotate(4deg); }
+}
+
+.todo-support-overlay {
+  position: fixed;
+  z-index: 40;
+  inset: 0;
+  background: rgb(17 13 20 / 14%);
+  animation: fade-in 150ms ease-out;
+  -webkit-app-region: no-drag;
+}
+
+[data-theme="dark"] .todo-support-overlay {
+  background: rgb(0 0 0 / 24%);
+}
+
+.todo-support-confetti {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.todo-support-dialog {
+  position: fixed;
+  z-index: 50;
+  right: var(--support-offset);
+  bottom: var(--support-dialog-offset);
+  width: min(330px, calc(100vw - 2 * var(--support-offset)));
+  max-height: calc(100vh - var(--support-dialog-offset) - var(--support-offset));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  background: var(--bg-elevated);
+  color: var(--fg);
+  box-shadow: 0 3px 8px rgb(20 13 22 / 15%);
+  animation: support-dialog-in 180ms cubic-bezier(.16, 1, .3, 1);
+  -webkit-app-region: no-drag;
+}
+
+@keyframes support-dialog-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.todo-support-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.todo-support-title {
+  font-size: 18px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.todo-support-close {
+  display: grid;
+  place-items: center;
+  flex: 0 0 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: var(--fg-muted);
+  cursor: pointer;
+}
+
+.todo-support-close:hover {
+  background: var(--bg-subtle);
+  color: var(--fg);
+}
+
+.todo-support-description {
+  font-size: 13px;
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+
+.todo-support-figure {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin: 16px 0 14px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.todo-support-qr {
+  width: 184px;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px;
+  background: #fff;
+}
+
+.todo-support-qr-error {
+  display: grid;
+  place-items: center;
+  min-height: 72px;
+  color: var(--fg-muted);
+}
+
+.todo-support-note {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  color: var(--fg-muted);
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .todo-support-trigger .todo-support-heart,
+  .todo-support-overlay,
+  .todo-support-dialog {
+    animation: none;
+  }
+}

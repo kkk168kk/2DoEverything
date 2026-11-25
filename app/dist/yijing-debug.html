@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>易卦调试器</title>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #e0e0e0; overflow: hidden; height: 100vh; display: flex; }
+    #canvas-wrap { flex: 1; position: relative; min-width: 0; }
+    #canvas-wrap canvas { display: block; width: 100%; height: 100%; }
+    #panel { width: 320px; background: #141414; border-left: 1px solid #2a2a2a; overflow-y: auto; padding: 16px; }
+    h2 { font-size: 16px; margin-bottom: 12px; color: #d4a843; border-bottom: 1px solid #2a2a2a; padding-bottom: 8px; }
+    h3 { font-size: 13px; margin: 16px 0 8px; color: #aaa; font-weight: 600; }
+    .row { display: flex; align-items: center; margin-bottom: 6px; gap: 8px; }
+    .row label { width: 70px; font-size: 11px; color: #888; flex-shrink: 0; }
+    .row input[type="range"] { flex: 1; min-width: 0; }
+    .value { width: 40px; text-align: right; font-size: 11px; color: #d4a843; font-family: monospace; }
+    .btn-group { display: flex; gap: 8px; margin-top: 16px; }
+    button { flex: 1; padding: 8px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; transition: opacity 0.2s; }
+    button:hover { opacity: 0.85; }
+    .btn-primary { background: #d4a843; color: #1a1a1a; font-weight: 600; }
+    .btn-secondary { background: #2a2a2a; color: #e0e0e0; border: 1px solid #444; }
+    #export-area { margin-top: 16px; background: #0f0f0f; border: 1px solid #2a2a2a; border-radius: 6px; padding: 12px; font-size: 11px; display: none; }
+    #export-area pre { white-space: pre-wrap; word-break: break-all; color: #7ec699; font-family: 'JetBrains Mono', monospace; font-size: 10px; line-height: 1.5; max-height: 200px; overflow-y: auto; }
+    .hint { font-size: 11px; color: #666; margin-top: 8px; line-height: 1.4; }
+    .divider { height: 1px; background: #2a2a2a; margin: 12px 0; }
+  </style>
+</head>
+<body>
+  <div id="canvas-wrap"></div>
+  <div id="panel">
+    <h2>易卦调试器</h2>
+    <p class="hint">调整参数，左侧实时预览。满意后点击"导出配置"复制参数。</p>
+
+    <h3>相机</h3>
+    <div class="row"><label>posX</label><input type="range" id="camX" min="-10" max="10" step="0.1" value="0"><span class="value" id="v-camX">0</span></div>
+    <div class="row"><label>posY</label><input type="range" id="camY" min="0.5" max="15" step="0.1" value="3.4"><span class="value" id="v-camY">3.4</span></div>
+    <div class="row"><label>posZ</label><input type="range" id="camZ" min="0.5" max="15" step="0.1" value="5"><span class="value" id="v-camZ">5</span></div>
+    <div class="row"><label>targetY</label><input type="range" id="camTargetY" min="-2" max="5" step="0.1" value="1"><span class="value" id="v-camTargetY">1</span></div>
+    <div class="row"><label>FOV</label><input type="range" id="camFov" min="10" max="120" step="1" value="37"><span class="value" id="v-camFov">37</span></div>
+
+    <h3>灯光</h3>
+    <div class="row"><label>环境光</label><input type="range" id="ambInt" min="0" max="5" step="0.05" value="2"><span class="value" id="v-ambInt">2</span></div>
+    <div class="row"><label>主光强</label><input type="range" id="mainInt" min="0" max="5" step="0.1" value="2.2"><span class="value" id="v-mainInt">2.2</span></div>
+    <div class="row"><label>主光X</label><input type="range" id="mainX" min="-10" max="10" step="0.5" value="4"><span class="value" id="v-mainX">4</span></div>
+    <div class="row"><label>主光Y</label><input type="range" id="mainY" min="1" max="15" step="0.5" value="8"><span class="value" id="v-mainY">8</span></div>
+    <div class="row"><label>主光Z</label><input type="range" id="mainZ" min="-10" max="10" step="0.5" value="5"><span class="value" id="v-mainZ">5</span></div>
+
+    <h3>矩形空气墙</h3>
+    <div class="row"><label>中心X</label><input type="range" id="wallCX" min="-3" max="3" step="0.1" value="0"><span class="value" id="v-wallCX">0</span></div>
+    <div class="row"><label>中心Z</label><input type="range" id="wallCZ" min="-3" max="3" step="0.1" value="-0.9"><span class="value" id="v-wallCZ">-0.9</span></div>
+    <div class="row"><label>宽度</label><input type="range" id="wallW" min="1" max="8" step="0.1" value="4.2"><span class="value" id="v-wallW">4.2</span></div>
+    <div class="row"><label>深度</label><input type="range" id="wallD" min="1" max="8" step="0.1" value="4.7"><span class="value" id="v-wallD">4.7</span></div>
+    <div class="row"><label>墙高</label><input type="range" id="wallH" min="0.5" max="8" step="0.1" value="4.3"><span class="value" id="v-wallH">4.3</span></div>
+
+    <h3>物理</h3>
+    <div class="row"><label>重力</label><input type="range" id="grav" min="5" max="100" step="1" value="29"><span class="value" id="v-grav">29</span></div>
+    <div class="row"><label>抛速</label><input type="range" id="tossV" min="2" max="30" step="0.5" value="10"><span class="value" id="v-tossV">10</span></div>
+    <div class="row"><label>弹性</label><input type="range" id="rest" min="0" max="1" step="0.05" value="0.4"><span class="value" id="v-rest">0.4</span></div>
+    <div class="row"><label>摩擦</label><input type="range" id="fric" min="0" max="1" step="0.05" value="0.55"><span class="value" id="v-fric">0.55</span></div>
+    <div class="row"><label>静止阈</label><input type="range" id="settle" min="0.1" max="5" step="0.1" value="0.3"><span class="value" id="v-settle">0.3</span></div>
+
+    <div class="divider"></div>
+    <div class="btn-group">
+      <button class="btn-primary" id="btn-export">导出配置</button>
+      <button class="btn-secondary" id="btn-reset">重置</button>
+    </div>
+    <div class="btn-group">
+      <button class="btn-secondary" id="btn-toss">抛掷测试</button>
+    </div>
+
+    <div id="export-area">
+      <pre id="export-text"></pre>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    const params = {
+      camera: { x: 0, y: 3.4, z: 5, targetY: 1, fov: 37 },
+      lights: { ambient: 2, mainIntensity: 2.2, mainX: 4, mainY: 8, mainZ: 5 },
+      wall: { cx: 0, cz: -0.9, width: 4.2, depth: 4.7, height: 4.3 },
+      physics: { gravity: 29, tossSpeed: 10, restitution: 0.4, friction: 0.55, settleThreshold: 0.3 },
+    };
+
+    const COIN_RADIUS = 0.38;
+    const COIN_THICKNESS = 0.06;
+    const COIN_DIAMETER = COIN_RADIUS * 2;
+    const SETTLE_FRAMES = 12;
+
+    const container = document.getElementById('canvas-wrap');
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    container.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color('#3d2e1e');
+
+    const camera = new THREE.PerspectiveCamera(params.camera.fov, container.clientWidth / container.clientHeight, 0.1, 100);
+    camera.position.set(params.camera.x, params.camera.y, params.camera.z);
+    camera.lookAt(0, params.camera.targetY, 0);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.target.set(0, params.camera.targetY, 0);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, params.lights.ambient);
+    scene.add(ambientLight);
+
+    const mainLight = new THREE.DirectionalLight(0xfff8ee, params.lights.mainIntensity);
+    mainLight.position.set(params.lights.mainX, params.lights.mainY, params.lights.mainZ);
+    mainLight.castShadow = true;
+    mainLight.shadow.mapSize.set(1024, 1024);
+    mainLight.shadow.camera.near = 0.5;
+    mainLight.shadow.camera.far = 25;
+    mainLight.shadow.camera.left = -6;
+    mainLight.shadow.camera.right = 6;
+    mainLight.shadow.camera.top = 6;
+    mainLight.shadow.camera.bottom = -6;
+    mainLight.shadow.bias = -0.0005;
+    scene.add(mainLight);
+
+    scene.add(new THREE.DirectionalLight(0xffe8c8, 0.5));
+    scene.add(new THREE.PointLight(0xffffff, 0.3, 10));
+
+    const tableGeo = new THREE.PlaneGeometry(12, 10);
+    const tableMat = new THREE.MeshStandardMaterial({ color: '#3d2e1e', roughness: 0.85, metalness: 0.05 });
+    const table = new THREE.Mesh(tableGeo, tableMat);
+    table.rotation.x = -Math.PI / 2;
+    table.receiveShadow = true;
+    scene.add(table);
+
+    function createCoinFaceTexture(text, isFront) {
+      const size = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const grad = ctx.createRadialGradient(size * 0.35, size * 0.35, 20, size / 2, size / 2, size / 2);
+      if (isFront) {
+        grad.addColorStop(0, '#f0d878'); grad.addColorStop(0.4, '#d4a843'); grad.addColorStop(0.75, '#b8860b'); grad.addColorStop(1, '#7a5a00');
+      } else {
+        grad.addColorStop(0, '#dcc060'); grad.addColorStop(0.4, '#c49a2a'); grad.addColorStop(0.75, '#a07800'); grad.addColorStop(1, '#6a4a00');
+      }
+      ctx.fillStyle = grad; ctx.fillRect(0, 0, size, size);
+      ctx.beginPath(); ctx.arc(size / 2, size / 2, size * 0.46, 0, Math.PI * 2);
+      ctx.strokeStyle = isFront ? 'rgba(140,110,20,0.6)' : 'rgba(120,90,15,0.5)'; ctx.lineWidth = 6; ctx.stroke();
+      ctx.beginPath(); ctx.arc(size / 2, size / 2, size * 0.34, 0, Math.PI * 2);
+      ctx.strokeStyle = isFront ? 'rgba(100,70,8,0.35)' : 'rgba(90,60,6,0.3)'; ctx.lineWidth = 3; ctx.stroke();
+      ctx.fillStyle = isFront ? '#3a2400' : '#2e1c00';
+      ctx.font = `bold ${text.length === 1 ? 180 : 130}px serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(text, size / 2, size / 2);
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    function createCoinMesh(x, z) {
+      const frontTex = createCoinFaceTexture('壹', true);
+      const backTex = createCoinFaceTexture('通宝', false);
+      const sideMat = new THREE.MeshStandardMaterial({ color: '#c9a03c', metalness: 0.85, roughness: 0.25 });
+      const frontMat = new THREE.MeshStandardMaterial({ map: frontTex, color: 0xffffff, metalness: 0.75, roughness: 0.3 });
+      const backMat = new THREE.MeshStandardMaterial({ map: backTex, color: 0xeeeeee, metalness: 0.75, roughness: 0.35 });
+      const geo = new THREE.CylinderGeometry(COIN_RADIUS, COIN_RADIUS, COIN_THICKNESS, 64);
+      const mesh = new THREE.Mesh(geo, [sideMat, frontMat, backMat]);
+      mesh.position.set(x, getFloorY(0, 0, 0), z);
+      mesh.castShadow = true;
+      return mesh;
+    }
+
+    function getBottomOffset(rx, ry, rz) {
+      const cx = Math.cos(rx), sx = Math.sin(rx);
+      const cy = Math.cos(ry), sy = Math.sin(ry);
+      const cz = Math.cos(rz), sz = Math.sin(rz);
+      const axisY = sz * sy * sx + cz * cx;
+      const axisYAbs = Math.abs(axisY);
+      return (COIN_THICKNESS / 2) * axisYAbs + COIN_RADIUS * Math.sqrt(Math.max(0, 1 - axisYAbs * axisYAbs));
+    }
+    function getFloorY(rx, ry, rz) {
+      return getBottomOffset(rx, ry, rz);
+    }
+
+    const coins = [];
+    const coinPositions = [{ x: -0.9, z: 0 }, { x: 0, z: 0 }, { x: 0.9, z: 0 }];
+
+    for (let i = 0; i < 3; i++) {
+      const mesh = createCoinMesh(coinPositions[i].x, coinPositions[i].z);
+      scene.add(mesh);
+      coins.push({
+        mesh, y: getFloorY(0, 0, 0), vy: 0, x: coinPositions[i].x, z: coinPositions[i].z,
+        vx: 0, vz: 0, rx: 0, ry: 0, rz: 0,
+        wx: 0, wy: 0, wz: 0,
+        state: 'idle', result: true, settleFrames: 0, onGround: false,
+      });
+    }
+
+    const clock = new THREE.Clock();
+    let tossing = false;
+    let settledCount = 0;
+
+    function getWallBounds() {
+      const halfW = params.wall.width / 2;
+      const halfD = params.wall.depth / 2;
+      return {
+        minX: params.wall.cx - halfW + COIN_RADIUS,
+        maxX: params.wall.cx + halfW - COIN_RADIUS,
+        minZ: params.wall.cz - halfD + COIN_RADIUS,
+        maxZ: params.wall.cz + halfD - COIN_RADIUS,
+      };
+    }
+
+    function resolveCoinCollisions(dt) {
+      for (let i = 0; i < coins.length; i++) {
+        for (let j = i + 1; j < coins.length; j++) {
+          const a = coins[i];
+          const b = coins[j];
+          const dx = b.x - a.x;
+          const dz = b.z - a.z;
+          const distSq = dx * dx + dz * dz;
+          const minDist = COIN_DIAMETER;
+          if (distSq < minDist * minDist && distSq > 0.0001) {
+            const dist = Math.sqrt(distSq);
+            const overlap = minDist - dist;
+            const nx = dx / dist;
+            const nz = dz / dist;
+            a.x -= nx * overlap * 0.5;
+            a.z -= nz * overlap * 0.5;
+            b.x += nx * overlap * 0.5;
+            b.z += nz * overlap * 0.5;
+            const dvx = b.vx - a.vx;
+            const dvz = b.vz - a.vz;
+            const velAlongNormal = dvx * nx + dvz * nz;
+            if (velAlongNormal > 0) continue;
+            const impulse = -(1 + 0.3) * velAlongNormal / 2;
+            a.vx -= impulse * nx;
+            a.vz -= impulse * nz;
+            b.vx += impulse * nx;
+            b.vz += impulse * nz;
+          }
+        }
+      }
+    }
+
+    function tossCoins() {
+      tossing = true;
+      settledCount = 0;
+      const wall = getWallBounds();
+      for (const coin of coins) {
+        coin.state = 'tossing';
+        coin.rx = 0; coin.ry = 0; coin.rz = 0;
+        coin.y = COIN_THICKNESS / 2;
+        const margin = 0.5;
+        coin.x = params.wall.cx + (Math.random() - 0.5) * (params.wall.width - margin * 2);
+        coin.z = params.wall.cz + (Math.random() - 0.5) * (params.wall.depth - margin * 2);
+        coin.x = Math.max(wall.minX, Math.min(wall.maxX, coin.x));
+        coin.z = Math.max(wall.minZ, Math.min(wall.maxZ, coin.z));
+        coin.vy = params.physics.tossSpeed * (0.85 + Math.random() * 0.3);
+        coin.vx = (Math.random() - 0.5) * 4;
+        coin.vz = (Math.random() - 0.5) * 4;
+        coin.wx = (5 + Math.random() * 5) * (Math.random() > 0.5 ? 1 : -1);
+        coin.wy = (Math.random() - 0.5) * 0.5;
+        coin.wz = (Math.random() - 0.5) * 1;
+        coin.settleFrames = 0;
+      }
+    }
+
+    const SUB_STEPS = 16;
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(clock.getDelta(), 0.05);
+      const wall = getWallBounds();
+      const g = params.physics.gravity;
+      const rest = params.physics.restitution;
+      const friction = params.physics.friction;
+      const angDamp = 0.88;
+      const settleTh = params.physics.settleThreshold;
+
+      resolveCoinCollisions(dt);
+
+      for (const coin of coins) {
+        if (coin.state !== 'tossing') continue;
+
+        const subDt = dt / SUB_STEPS;
+        for (let step = 0; step < SUB_STEPS; step++) {
+          coin.vy -= g * subDt;
+          coin.y += coin.vy * subDt;
+          coin.x += coin.vx * subDt;
+          coin.z += coin.vz * subDt;
+          coin.rx += coin.wx * subDt;
+          coin.ry += coin.wy * subDt;
+          coin.rz += coin.wz * subDt;
+
+          coin.wx *= 0.99;
+          coin.wy *= 0.99;
+          coin.wz *= 0.99;
+          coin.vx *= 0.999;
+          coin.vz *= 0.999;
+
+          if (coin.x < wall.minX) { coin.x = wall.minX; coin.vx = Math.abs(coin.vx) * 0.25; }
+          if (coin.x > wall.maxX) { coin.x = wall.maxX; coin.vx = -Math.abs(coin.vx) * 0.25; }
+          if (coin.z < wall.minZ) { coin.z = wall.minZ; coin.vz = Math.abs(coin.vz) * 0.25; }
+          if (coin.z > wall.maxZ) { coin.z = wall.maxZ; coin.vz = -Math.abs(coin.vz) * 0.25; }
+
+          const bottomOffset = getBottomOffset(coin.rx, coin.ry, coin.rz);
+          const bottomY = coin.y - bottomOffset;
+
+          if (bottomY <= 0) {
+            coin.y = bottomOffset;
+
+            if (coin.vy < -settleTh) {
+              coin.vy = -coin.vy * rest;
+              coin.settleFrames = 0;
+            } else {
+              coin.vy = 0;
+
+              /* 真实摩擦物理 */
+              const fX = -coin.vx * friction;
+              const fZ = -coin.vz * friction;
+              coin.vx += fX;
+              coin.vz += fZ;
+
+              /* 摩擦力矩 — 自然让硬币倒下 */
+              coin.wx += bottomOffset * fZ * 4;
+              coin.wz -= bottomOffset * fX * 4;
+
+              /* 旋转阻尼 */
+              coin.wx *= angDamp;
+              coin.wy *= angDamp;
+              coin.wz *= angDamp;
+
+              const speed = Math.abs(coin.vx) + Math.abs(coin.vz);
+              const angularSpeed = Math.abs(coin.wx) + Math.abs(coin.wy) + Math.abs(coin.wz);
+              if (speed < settleTh && angularSpeed < settleTh) {
+                coin.settleFrames++;
+                if (coin.settleFrames >= SETTLE_FRAMES) {
+                  coin.state = 'settled';
+                  coin.vx = 0; coin.vz = 0;
+                  coin.wx = 0; coin.wy = 0; coin.wz = 0;
+
+                  const nrx = ((coin.rx % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+                  const q = Math.PI / 4;
+                  if (nrx < q || nrx > 7 * q) {
+                    coin.result = true;
+                  } else if (nrx > 3 * q && nrx < 5 * q) {
+                    coin.result = false;
+                  } else {
+                    coin.result = Math.random() > 0.5;
+                  }
+                  coin.y = getBottomOffset(coin.rx, coin.ry, coin.rz);
+                  settledCount++;
+                  break;
+                }
+              } else {
+                coin.settleFrames = 0;
+              }
+            }
+          } else {
+            coin.settleFrames = 0;
+          }
+        }
+
+        coin.mesh.position.set(coin.x, coin.y, coin.z);
+        coin.mesh.rotation.set(coin.rx, coin.ry, coin.rz);
+      }
+
+      if (tossing && settledCount >= 3) {
+        tossing = false;
+        console.log('All settled:', coins.map(c => c.result ? '壹' : '通宝'));
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+
+    function bind(id, key, subkey, isInt) {
+      const el = document.getElementById(id);
+      const val = document.getElementById('v-' + id);
+      el.addEventListener('input', () => {
+        const v = isInt ? parseInt(el.value) : parseFloat(el.value);
+        params[key][subkey] = v;
+        val.textContent = v;
+        if (key === 'camera') {
+          if (subkey === 'x' || subkey === 'y' || subkey === 'z') camera.position[subkey] = v;
+          else if (subkey === 'fov') { camera.fov = v; camera.updateProjectionMatrix(); }
+          else if (subkey === 'targetY') { controls.target.y = v; camera.lookAt(0, v, 0); }
+        } else if (key === 'lights') {
+          if (subkey === 'ambient') ambientLight.intensity = v;
+          else if (subkey === 'mainIntensity') mainLight.intensity = v;
+          else if (subkey === 'mainX') mainLight.position.x = v;
+          else if (subkey === 'mainY') mainLight.position.y = v;
+          else if (subkey === 'mainZ') mainLight.position.z = v;
+        }
+      });
+    }
+
+    bind('camX', 'camera', 'x');
+    bind('camY', 'camera', 'y');
+    bind('camZ', 'camera', 'z');
+    bind('camTargetY', 'camera', 'targetY');
+    bind('camFov', 'camera', 'fov', true);
+    bind('ambInt', 'lights', 'ambient');
+    bind('mainInt', 'lights', 'mainIntensity');
+    bind('mainX', 'lights', 'mainX');
+    bind('mainY', 'lights', 'mainY');
+    bind('mainZ', 'lights', 'mainZ');
+    bind('wallCX', 'wall', 'cx');
+    bind('wallCZ', 'wall', 'cz');
+    bind('wallW', 'wall', 'width');
+    bind('wallD', 'wall', 'depth');
+    bind('wallH', 'wall', 'height');
+    bind('grav', 'physics', 'gravity');
+    bind('tossV', 'physics', 'tossSpeed');
+    bind('rest', 'physics', 'restitution');
+    bind('fric', 'physics', 'friction');
+    bind('settle', 'physics', 'settleThreshold');
+
+    document.getElementById('btn-toss').addEventListener('click', tossCoins);
+
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      for (let i = 0; i < coins.length; i++) {
+        const coin = coins[i];
+        coin.state = 'idle';
+        coin.y = COIN_THICKNESS / 2;
+        coin.x = coinPositions[i].x;
+        coin.z = coinPositions[i].z;
+        coin.mesh.position.set(coin.x, coin.y, coin.z);
+        coin.mesh.rotation.set(0, 0, 0);
+      }
+      tossing = false;
+      settledCount = 0;
+    });
+
+    document.getElementById('btn-export').addEventListener('click', () => {
+      const code = `// === 易卦3D配置 ===
+const CAMERA = {
+  position: [${params.camera.x}, ${params.camera.y}, ${params.camera.z}],
+  lookAt: [0, ${params.camera.targetY}, 0],
+  fov: ${params.camera.fov},
+};
+
+const LIGHTS = {
+  ambient: ${params.lights.ambient},
+  main: {
+    intensity: ${params.lights.mainIntensity},
+    position: [${params.lights.mainX}, ${params.lights.mainY}, ${params.lights.mainZ}],
+  },
+};
+
+const AIR_WALL = {
+  centerX: ${params.wall.cx},
+  centerZ: ${params.wall.cz},
+  width: ${params.wall.width},
+  depth: ${params.wall.depth},
+  height: ${params.wall.height},
+};
+
+const PHYSICS = {
+  gravity: ${params.physics.gravity},
+  tossSpeed: ${params.physics.tossSpeed},
+  restitution: ${params.physics.restitution},
+  friction: ${params.physics.friction},
+  settleThreshold: ${params.physics.settleThreshold},
+};`;
+      document.getElementById('export-text').textContent = code;
+      document.getElementById('export-area').style.display = 'block';
+    });
+  </script>
+</body>
+</html>
